@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.py[cod]
+.playwright-cli/
+roku_monitor.db
+roku_monitor.db-*
+*.log
+.env

@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roku Control</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236366f1'/%3E%3Crect x='10' y='13' width='44' height='32' rx='5' fill='%230f172a' stroke='%23fff' stroke-width='3'/%3E%3Cpath d='M27 22v14l12-7z' fill='%23fff'/%3E%3Cpath d='M24 52h16M32 45v7' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --status-online: #10b981;
+            --status-idle: #f59e0b;
+            --status-offline: #ef4444;
+            --border-color: #475569;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-main);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--accent);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-add-device {
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            border-radius: 50%;
+            font-size: 1.35rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Devices List */
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 6px;
+            background-color: var(--bg-primary);
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .device-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .device-ip {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-online { background-color: var(--status-online); box-shadow: 0 0 8px var(--status-online); }
+        .status-idle { background-color: var(--status-idle); box-shadow: 0 0 8px var(--status-idle); }
+        .status-offline { background-color: var(--status-offline); }
+
+        .btn-delete {
+            background: none;
+            color: var(--text-muted);
+            border: none;
+            cursor: pointer;
+            width: auto;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-delete:hover {
+            color: var(--status-offline);
+            background: none;
+        }
+
+        /* Playback Cards */
+        .playback-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .playback-card {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .card-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-card-power {
+            width: 32px;
+            height: 32px;
+        }
+
+        .card-media {
+            position: relative;
+            aspect-ratio: 16/9;
+            background-color: black;
+            overflow: hidden;
+        }
+
+        .card-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card-media-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: rgba(15, 23, 42, 0.82);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-weight: 600;
+            backdrop-filter: blur(3px);
+        }
+
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .card-media-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        .video-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 2.8rem;
+        }
+
+        .progress-container {
+            margin-top: 1rem;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background-color: var(--bg-primary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.25rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+
+        .btn-control {
+            background-color: var(--bg-tertiary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            padding: 0;
+            transition: background-color 0.2s;
+        }
+
+        .btn-control:hover {
+            background-color: var(--accent);
+        }
+
+        .btn-control:disabled {
+            opacity: 0.45;
+            cursor: wait;
+        }
+
+        .btn-control.btn-power:hover {
+            background-color: var(--status-offline);
+        }
+
+        .history-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+            width: 92px;
+        }
+
+        .history-actions .btn-resume,
+        .history-actions .btn-delete-history {
+            width: 100%;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            justify-content: center;
+        }
+
+        .btn-delete-history {
+            background-color: #5b2730;
+        }
+
+        .btn-delete-history:hover {
+            background-color: var(--status-offline);
+        }
+
+        .btn-control svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        /* History Table */
+        .history-section {
+            margin-top: 3rem;
+        }
+
+        .history-table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-thumbnail {
+            width: 80px;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .history-video {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .history-video-title {
+            font-weight: 500;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .history-video-title:hover {
+            text-decoration: underline;
+            color: #818cf8;
+        }
+
+        .btn-resume {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .btn-plex {
+            background-color: #eab000;
+            color: #0f172a;
+        }
+
+        .btn-plex:hover {
+            background-color: #c99700;
+        }
+
+        .plex-wordmark {
+            width: 45px;
+            height: 21px;
+            padding: 3px;
+            display: block;
+            background: #1f2937;
+            border-radius: 3px;
+        }
+
+        /* Resume Dialog */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 400px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .plex-search-modal-content {
+            width: min(680px, calc(100vw - 2rem));
+            max-height: min(760px, calc(100vh - 2rem));
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plex-search-results {
+            min-height: 180px;
+            max-height: 480px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .plex-search-result {
+            width: 100%;
+            padding: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            text-align: left;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 0;
+        }
+
+        .plex-search-result:last-child { border-bottom: 0; }
+        .plex-search-result:hover { background: var(--bg-tertiary); }
+
+        .plex-search-thumb {
+            width: 88px;
+            height: 56px;
+            flex: 0 0 88px;
+            object-fit: cover;
+            border-radius: 5px;
+            background: var(--bg-primary);
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-cancel {
+            background-color: var(--bg-tertiary);
+        }
+
+        .btn-cancel:hover {
+            background-color: var(--border-color);
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 9999;
+            max-width: 400px;
+            width: calc(100% - 4rem);
+        }
+
+        .toast {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent);
+            color: var(--text-main);
+            padding: 0.85rem 1.25rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1), fadeOut 0.5s ease-in 4.5s forwards;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .toast-success {
+            border-left-color: var(--status-online);
+        }
+
+        .toast-error {
+            border-left-color: var(--status-offline);
+        }
+
+        .toast-info {
+            border-left-color: var(--accent);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(2rem) scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Mobile History Table layout */
+        @media (max-width: 768px) {
+            .history-table-container {
+                border: none;
+                background-color: transparent;
+            }
+
+            table, thead, tbody, th, td, tr {
+                display: block;
+                width: 100%;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tr {
+                background-color: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                margin-bottom: 1rem;
+                padding: 1.25rem;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            td {
+                padding: 0;
+                border-bottom: none;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+
+            td:nth-child(1) {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 0.75rem;
+            }
+
+            .history-video {
+                width: 100%;
+            }
+
+            td::before {
+                content: attr(data-label);
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--text-muted);
+            }
+
+            td:nth-child(1)::before {
+                display: none;
+            }
+
+            td:last-child {
+                margin-top: 0.5rem;
+                justify-content: flex-end;
+            }
+
+            .btn-resume {
+                width: 100%;
+                justify-content: center;
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .history-actions {
+                width: 100%;
+            }
+
+            .history-actions .btn-resume,
+            .history-actions .btn-delete-history {
+                flex: none;
+                width: 100%;
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <div class="container">
+        <header>
+            <h1>Roku Control</h1>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Local time: <span id="local-time"></span></div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Sidebar (Setup) -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Monitored Devices List -->
+                <div class="panel">
+                    <div class="panel-title">
+                        <span>Monitored Devices</span>
+                        <button type="button" class="btn-add-device" id="btn-open-add-device" title="Add Roku Device" aria-label="Add Roku Device">+</button>
+                    </div>
+                    <div id="monitored-devices-list">
+                        <!-- Devices populated dynamically -->
+                        <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem;">
+                            No devices configured.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plex Account -->
+                <div class="panel">
+                    <div class="panel-title">Plex Account</div>
+                    <form id="plex-settings-form">
+                        <div id="plex-account-status" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                            Not connected
+                        </div>
+                        <button type="submit" id="plex-connect-button">Connect Plex Account</button>
+                        <button type="button" id="plex-disconnect-button" style="display: none; margin-top: 0.75rem; background: #5b2730;">Disconnect</button>
+                    </form>
+                </div>
+
+            </div>
+
+            <!-- Main Area (Active Playback) -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <div class="panel" style="min-height: 400px;">
+                    <div class="panel-title">Live Playback</div>
+                    <div class="playback-cards" id="playback-cards-container">
+                        <!-- Playback cards populated dynamically -->
+                        <div class="card-media-placeholder" style="grid-column: 1/-1; height: 300px;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted); margin-bottom: 1rem;">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                            <span>No active YouTube or Plex playback detected.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="history-section panel">
+            <div class="panel-title">Playback History</div>
+            <div class="history-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Video</th>
+                            <th>Roku Device</th>
+                            <th>Last Played Position</th>
+                            <th>Timestamp</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                History is empty.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div class="modal" id="add-device-modal">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="add-device-modal-title">
+            <div class="modal-title" id="add-device-modal-title">Add Roku Device</div>
+            <form id="add-device-form">
+                <div class="form-group">
+                    <label for="device-name">Device Name (e.g. Living Room)</label>
+                    <input type="text" id="device-name" placeholder="Living Room" required>
+                </div>
+                <div class="form-group">
+                    <label for="device-ip">Roku IP Address</label>
+                    <input type="text" id="device-ip" placeholder="192.168.1.50" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" id="btn-cancel-add-device">Cancel</button>
+                    <button type="submit">Add Device</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resume Modal -->
+    <div class="modal" id="resume-modal">
+        <div class="modal-content">
+            <div class="modal-title">Resume Playback</div>
+            <div style="font-size: 0.9rem; margin-bottom: 1.5rem; color: var(--text-muted);">
+                Select the Roku device where you want to play <strong id="modal-video-title"></strong> at <strong id="modal-video-position"></strong>.
+            </div>
+            <div class="form-group">
+                <label for="modal-device-select">Select Roku</label>
+                <select id="modal-device-select" style="width: 100%; padding: 0.75rem; border-radius: 6px; background-color: var(--bg-primary); color: var(--text-main); border: 1px solid var(--border-color); font-family: inherit;">
+                    <!-- Options populated dynamically -->
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" id="btn-modal-cancel">Cancel</button>
+                <button id="btn-modal-confirm">Cast to Roku</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plex Library Search Modal -->
+    <div class="modal" id="plex-play-modal">
+        <div class="modal-content plex-search-modal-content" role="dialog" aria-modal="true" aria-labelledby="plex-play-modal-title">
+            <div class="modal-title" id="plex-play-modal-title">Play Plex</div>
+            <div id="plex-play-device" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;"></div>
+            <input type="search" id="plex-search-input" placeholder="Search movies and TV shows" autocomplete="off">
+            <div id="plex-search-status" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem;"></div>
+            <div class="plex-search-results" id="plex-search-results"></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" id="btn-plex-modal-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let devices = [];
+        let history = [];
+        let selectedHistoryItem = null;
+        let plexCatalog = null;
+        let plexCatalogRefresh = null;
+        let plexSearchResults = [];
+        let plexSearchDevice = null;
+        const pendingDeviceActions = {};
+        const liveStatusPolls = new Set();
+
+        function isPlexId(videoId) {
+            return Boolean(videoId) && (videoId.startsWith('plex:') || videoId.startsWith('plex_'));
+        }
+
+        // Format duration helper (seconds -> hh:mm:ss or mm:ss)
+        function formatTime(seconds) {
+            if (seconds === null || seconds === undefined || isNaN(seconds)) return "0:00";
+            const sec = Math.floor(seconds % 60);
+            const min = Math.floor((seconds / 60) % 60);
+            const hrs = Math.floor(seconds / 3600);
+
+            const pad = (n) => n.toString().padStart(2, '0');
+
+            if (hrs > 0) {
+                return `${hrs}:${pad(min)}:${pad(sec)}`;
+            }
+            return `${min}:${pad(sec)}`;
+        }
+
+        function estimatedPosition(device) {
+            const state = device && device.playing_state;
+            if (!state) return 0;
+            if (state.state !== 'Playing') return state.current_time || 0;
+            const elapsed = (Date.now() - new Date(state.last_event_time).getTime()) / 1000;
+            return Math.min(state.duration || Infinity, (state.current_time || 0) + Math.max(0, elapsed));
+        }
+
+        function beginPendingDeviceAction(ip, type) {
+            const device = devices.find(item => item.ip === ip);
+            const action = {
+                type,
+                position: estimatedPosition(device),
+                videoId: device?.playing_state?.video_id,
+                startedAt: Date.now(),
+                startedAtIso: new Date().toISOString()
+            };
+            pendingDeviceActions[ip] = action;
+            if (device) applyPendingDeviceAction(device, action);
+            renderDevices();
+            renderPlaybackCards();
+        }
+
+        function applyPendingDeviceAction(device, action) {
+            device.ui_action = action.type;
+            if (device.playing_state) {
+                device.playing_state = {
+                    ...device.playing_state,
+                    current_time: action.position,
+                    last_event_time: action.startedAtIso,
+                    state: action.type === 'play' ? 'Playing' : 'Paused'
+                };
+            }
+            return device;
+        }
+
+        function reconcilePendingDeviceActions(serverDevices) {
+            return serverDevices.map(device => {
+                const action = pendingDeviceActions[device.ip];
+                if (!action) return device;
+
+                const state = device.playing_state?.state;
+                const confirmed =
+                    (action.type === 'power_off' && !device.playing_state) ||
+                    (action.type === 'pause' && state === 'Paused') ||
+                    (action.type === 'play' && state === 'Playing') ||
+                    (action.type === 'media_change' && device.playing_state?.video_id !== action.videoId);
+
+                if (confirmed || (action.type === 'media_change' && Date.now() - action.startedAt > 20000)) {
+                    delete pendingDeviceActions[device.ip];
+                    return device;
+                }
+                return applyPendingDeviceAction(device, action);
+            });
+        }
+
+        // Relative time helper
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHrs = Math.floor(diffMin / 60);
+            const diffDays = Math.floor(diffHrs / 24);
+
+            if (diffSec < 60) return "Just now";
+            if (diffMin < 60) return `${diffMin}m ago`;
+            if (diffHrs < 24) return `${diffHrs}h ago`;
+            return `${diffDays}d ago`;
+        }
+
+        // Clock in header
+        setInterval(() => {
+            document.getElementById('local-time').textContent = new Date().toLocaleTimeString();
+        }, 1000);
+        document.getElementById('local-time').textContent = new Date().toLocaleTimeString();
+
+        // Load devices and update UI
+        async function fetchDevices() {
+            try {
+                const response = await fetch('api/devices');
+                devices = reconcilePendingDeviceActions(await response.json());
+                renderDevices();
+                renderPlaybackCards();
+            } catch (err) {
+                console.error("Error fetching devices:", err);
+            }
+        }
+
+        async function pollForLivePlayback(ip, expectedVideoId, timeoutMs = 30000) {
+            if (liveStatusPolls.has(ip)) return;
+            liveStatusPolls.add(ip);
+            const deadline = Date.now() + timeoutMs;
+            try {
+                while (Date.now() < deadline) {
+                    await fetchDevices();
+                    const device = devices.find(item => item.ip === ip);
+                    if (device?.playing_state?.video_id === expectedVideoId) return;
+                    await new Promise(resolve => setTimeout(resolve, 750));
+                }
+            } finally {
+                liveStatusPolls.delete(ip);
+            }
+        }
+
+        // Load history and update UI
+        async function fetchHistory() {
+            try {
+                const response = await fetch('api/history');
+                history = await response.json();
+                renderHistory();
+            } catch (err) {
+                console.error("Error fetching history:", err);
+            }
+        }
+
+        // Render devices list in sidebar
+        function renderDevices() {
+            const list = document.getElementById('monitored-devices-list');
+            if (devices.length === 0) {
+                list.innerHTML = `
+                    <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem;">
+                        No devices configured.
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = devices.map(d => {
+                let dotClass = 'status-offline';
+                let statusLabel = 'Offline';
+                if (d.status === 'playing') {
+                    dotClass = 'status-online';
+                    statusLabel = 'Playing';
+                } else if (d.status === 'idle') {
+                    dotClass = 'status-idle';
+                    statusLabel = 'Idle';
+                }
+
+                let cooldownText = '';
+                if (d.cooldown_remaining > 0) {
+                    cooldownText = `<div style="font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 0.25rem;">Next check in: ${d.cooldown_remaining}s</div>`;
+                }
+
+                return `
+                    <div class="device-item" style="display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div class="device-info">
+                                <span class="device-name">${escapeHtml(d.name)}</span>
+                                <span class="device-ip">${d.ip}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div class="device-status">
+                                    <span class="status-dot ${dotClass}"></span>
+                                    <span>${statusLabel}</span>
+                                </div>
+                                <button class="btn-delete" onclick="deleteDevice('${d.ip}')" title="Delete Device">×</button>
+                            </div>
+                        </div>
+                        ${cooldownText}
+                        <div style="margin-top: 0.25rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem; width: 100%; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <button class="btn-resume" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;" onclick="playLast('${d.ip}')">
+                                Play Last
+                            </button>
+                            <button class="btn-resume btn-plex" aria-label="Play Plex" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem;" onclick="openPlexSearch('${d.ip}')">
+                                <span>Play</span>
+                                <svg aria-hidden="true" class="plex-wordmark" fill="currentColor" viewBox="0 0 105 48" xmlns="http://www.w3.org/2000/svg"><path d="M17.113 8.58569C12.9921 8.58569 10.3029 9.78804 8.01351 12.5924V9.50146H0V47.619C0 47.619 0.162684 47.6955 0.545152 47.7773C1.13879 47.9045 4.06709 48.58 6.25631 46.7086C8.15034 45.0882 8.5856 43.2125 8.5856 41.0534V35.5438C10.875 38.0045 13.5081 39.0355 17.1712 39.0355C25.0694 39.0355 31.1361 32.6251 31.1361 24.0967C31.1361 14.9971 25.2978 8.58677 17.113 8.58677V8.58569ZM15.5519 31.8613C11.1454 31.8613 7.62135 28.2111 7.62135 23.7422C7.62135 19.2732 11.7466 15.8741 15.5519 15.8741C20.0209 15.8741 23.4825 19.3368 23.4825 23.8047C23.4825 28.2726 20.0209 31.8613 15.5519 31.8613V31.8613Z" fill="white"></path><path d="M42.5294 23.2691C42.5294 26.5691 42.8946 30.5737 46.1483 34.9533C46.2118 35.0384 46.3896 35.2528 46.3896 35.2528C45.0741 37.5109 43.4171 39.03 41.2462 39.03C39.5332 39.03 37.8611 38.124 36.4681 36.5445C34.9791 34.8563 34.2681 32.652 34.2681 30.3572V0H42.5315L42.5283 23.2691H42.5294Z" fill="white"></path><path d="M83.2283 38.1208H73.2884L82.9363 23.8186L73.2884 9.50464H83.2283L92.8751 23.8186L83.2283 38.1208Z" fill="#EBAF00"></path><path d="M95.5265 22.1972L104.15 9.50464H94.1712L90.5361 14.7935L95.5265 22.1972Z" fill="white"></path><path d="M90.5361 32.8965C90.5383 32.903 92.2276 35.2527 92.2276 35.2527C93.8587 37.8104 95.951 39.0257 98.4451 39.0354C101.032 38.9891 102.874 36.6964 103.55 35.8927C103.55 35.8916 102.273 34.7679 100.691 32.89C98.5378 30.3324 95.6364 25.6856 95.5265 25.4863L90.5372 32.8976L90.5361 32.8965Z" fill="white"></path><path d="M65.8599 29.8906C64.1975 31.4237 63.0641 32.3115 60.7014 32.3115C56.5148 32.3115 54.1682 29.3897 53.8246 26.1274H75.8687C76.0077 25.6813 76.0982 25.1265 76.0982 24.2096C76.0982 15.2814 69.5726 8.58447 60.988 8.58447C52.4035 8.58447 46.1073 15.3956 46.1073 23.9231C46.1073 32.4505 52.8032 39.0332 61.1604 39.0332C66.9955 39.0332 72.0333 35.6945 74.8032 29.8896H65.861L65.8599 29.8906ZM61.0419 15.345C64.692 15.345 67.4232 17.7529 68.0524 20.8999H54.095C54.8502 17.5644 57.3918 15.345 61.043 15.345H61.0419Z" fill="white"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render playback cards in main area
+        function renderPlaybackCards() {
+            const container = document.getElementById('playback-cards-container');
+            const activeDevices = devices.filter(d => d.status === 'playing' || (d.status === 'idle' && d.playing_state));
+
+            if (activeDevices.length === 0) {
+                container.innerHTML = `
+                    <div class="card-media-placeholder" style="grid-column: 1/-1; height: 300px;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted); margin-bottom: 1rem;">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        <span>No active YouTube or Plex playback detected.</span>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = activeDevices.map(d => {
+                const s = d.playing_state;
+
+                // Calculate the estimated time during render to prevent jumping
+                let estimatedTime = s.current_time;
+                if (s.state === 'Playing') {
+                    const elapsed = (new Date() - new Date(s.last_event_time)) / 1000;
+                    estimatedTime = Math.min(s.duration, s.current_time + elapsed);
+                }
+
+                const percentage = s.duration > 0 ? (estimatedTime / s.duration) * 100 : 0;
+                const isPlaying = s.state === 'Playing';
+                const uiBusy = d.ui_action === 'power_off' || d.ui_action === 'media_change';
+                const actionMessage = d.ui_action === 'power_off' ? 'Stopping playback…' : 'Changing media…';
+
+                const isPlex = isPlexId(s.video_id);
+                const titleHtml = isPlex ?
+                    escapeHtml(s.title || 'Plex Media') :
+                    `<a href="https://youtube.com/watch?v=${s.video_id}" target="_blank" style="color: inherit; text-decoration: none;">
+                        ${escapeHtml(s.title || 'YouTube Video')}
+                    </a>`;
+
+                return `
+                    <div class="playback-card" data-ip="${d.ip}">
+                        <div class="card-header">
+                            <span class="card-title">${escapeHtml(d.name)}</span>
+                            <div class="card-header-actions">
+                                <div class="device-status">
+                                    <span class="status-dot status-online"></span>
+                                    <span>${isPlex ? 'Plex' : 'YouTube'}</span>
+                                </div>
+                                <button class="btn-control btn-power btn-card-power" onclick="sendPowerOff('${d.ip}')" title="Return Home and Power Off TV" ${uiBusy ? 'disabled' : ''}>
+                                    <svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17-1.42 1.42A7 7 0 1 1 7.58 6.6L6.17 5.17a9 9 0 1 0 11.66 0z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-media">
+                            <img src="${s.thumbnail_url || 'https://img.youtube.com/vi/' + s.video_id + '/0.jpg'}" alt="Thumbnail">
+                            ${uiBusy ? `<div class="card-media-overlay"><div class="loading-spinner"></div><span>${actionMessage}</span></div>` : ''}
+                        </div>
+                        <div class="card-body">
+                            <div>
+                                <div class="video-title" title="${escapeHtml(s.title)}">
+                                    ${titleHtml}
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <div class="progress-time">
+                                    <span class="current-time-label">${formatTime(estimatedTime)}</span>
+                                    <span>${formatTime(s.duration)}</span>
+                                </div>
+                            </div>
+                            <div class="controls">
+                                <button class="btn-control" onclick="sendControl('${d.ip}', 'previous')" title="Previous" ${uiBusy ? 'disabled' : ''}>
+                                    <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                                </button>
+                                <button class="btn-control" onclick="sendControl('${d.ip}', '${isPlaying ? 'pause' : 'play'}')" title="${isPlaying ? 'Pause' : 'Play'}" ${uiBusy ? 'disabled' : ''}>
+                                    ${isPlaying ?
+                                        `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>` :
+                                        `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`
+                                    }
+                                </button>
+                                <button class="btn-control" onclick="sendControl('${d.ip}', 'next')" title="Next" ${uiBusy ? 'disabled' : ''}>
+                                    <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render playback history table
+        function renderHistory() {
+            const tbody = document.getElementById('history-table-body');
+            if (history.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            History is empty.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = history.map(h => {
+                const isPlex = isPlexId(h.video_id);
+                const titleHtml = isPlex ?
+                    `<span class="history-video-title">${escapeHtml(h.video_title || 'Plex Media')}</span>` :
+                    `<a href="https://youtube.com/watch?v=${h.video_id}" target="_blank" class="history-video-title">
+                        ${escapeHtml(h.video_title || 'YouTube Video')}
+                    </a>`;
+
+                return `
+                    <tr>
+                        <td data-label="Video">
+                            <div class="history-video">
+                                <img src="${h.thumbnail_url}" class="history-thumbnail" alt="Thumbnail">
+                                ${titleHtml}
+                            </div>
+                        </td>
+                        <td data-label="Roku Device">${escapeHtml(h.device_name)} <div style="font-size:0.75rem; color:var(--text-muted)">${h.device_ip}</div></td>
+                        <td data-label="Position">${formatTime(h.position)} / ${formatTime(h.duration)}</td>
+                        <td data-label="Played" title="${h.timestamp}">${timeAgo(h.timestamp)}</td>
+                        <td data-label="Actions">
+                            <div class="history-actions">
+                                <button class="btn-resume" data-video-id="${h.video_id}" data-video-title="${escapeHtml(h.video_title)}" data-position="${h.position}" data-device-ip="${h.device_ip}" onclick="handleResumeClick(this)">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                                    Resume
+                                </button>
+                                <button class="btn-delete-history" onclick="deleteHistoryItem(${h.id})" title="Delete history item">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Add Device Modal
+        const addDeviceModal = document.getElementById('add-device-modal');
+
+        function openAddDeviceModal() {
+            addDeviceModal.style.display = 'flex';
+            setTimeout(() => document.getElementById('device-name').focus(), 0);
+        }
+
+        function closeAddDeviceModal() {
+            addDeviceModal.style.display = 'none';
+        }
+
+        document.getElementById('btn-open-add-device').addEventListener('click', openAddDeviceModal);
+        document.getElementById('btn-cancel-add-device').addEventListener('click', closeAddDeviceModal);
+        addDeviceModal.addEventListener('click', (event) => {
+            if (event.target === addDeviceModal) closeAddDeviceModal();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && addDeviceModal.style.display === 'flex') {
+                closeAddDeviceModal();
+            }
+        });
+
+        // Add Device Form Handler
+        document.getElementById('add-device-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('device-name').value;
+            const ip = document.getElementById('device-ip').value;
+
+            try {
+                const response = await fetch('api/devices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, ip })
+                });
+                const res = await response.json();
+                if (res.success) {
+                    document.getElementById('device-name').value = '';
+                    document.getElementById('device-ip').value = '';
+                    closeAddDeviceModal();
+                    fetchDevices();
+                    showToast(`Device "${name}" added successfully!`, 'success');
+                } else {
+                    showToast("Error adding device: " + (res.detail || res.error || "Unknown error"), 'error');
+                }
+            } catch (err) {
+                showToast("Could not communicate with server: " + err, 'error');
+            }
+        });
+
+        // Play last media played on the device
+        async function playLast(ip) {
+            try {
+                const response = await fetch(`api/devices/${ip}/play-last`, {
+                    method: 'POST'
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    pollForLivePlayback(ip, res.video_id);
+                    if (isPlexId(res.video_id)) {
+                        showToast(`Plex resumed "${res.video_title}" at ${formatTime(res.position)}.`, 'success');
+                    } else {
+                        showToast(`Casting resume command: "${res.video_title}" starting at ${formatTime(res.position)}`, 'info');
+                    }
+                } else {
+                    showToast("Error: " + (res.detail || res.error || "Could not play last video"), 'error');
+                }
+            } catch (err) {
+                showToast("Failed to connect to server: " + err, 'error');
+            }
+        }
+
+        async function loadPlexCatalog() {
+            const status = document.getElementById('plex-search-status');
+            const results = document.getElementById('plex-search-results');
+            status.textContent = 'Loading Kid Movies and Kid TV Shows…';
+            results.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">Loading Plex library…</div>';
+            try {
+                const response = await fetch('api/plex/catalog');
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not load Plex library');
+                plexCatalog = data.items || [];
+                const libraryText = (data.libraries || []).join(', ');
+                status.textContent = `${plexCatalog.length} titles loaded${libraryText ? ` from ${libraryText}` : ''}.`;
+                renderPlexSearchResults();
+            } catch (err) {
+                plexCatalog = null;
+                status.textContent = err.message;
+                results.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--status-offline);">Plex library could not be loaded.</div>';
+            }
+        }
+
+        async function refreshPlexCatalog() {
+            if (plexCatalogRefresh) return plexCatalogRefresh;
+            const status = document.getElementById('plex-search-status');
+            status.textContent = `${(plexCatalog || []).length} cached titles loaded. Checking Plex for updates…`;
+            plexCatalogRefresh = (async () => {
+                try {
+                    const response = await fetch('api/plex/catalog/refresh', { method: 'POST' });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.detail || 'Could not update Plex library');
+                    const existingIds = new Set((plexCatalog || []).map(item => item.video_id));
+                    const refreshedItems = data.items || [];
+                    const refreshedIds = new Set(refreshedItems.map(item => item.video_id));
+                    const additions = refreshedItems.filter(item => !existingIds.has(item.video_id));
+                    const removals = (plexCatalog || []).filter(item => !refreshedIds.has(item.video_id));
+                    plexCatalog = refreshedItems.slice().sort((a, b) =>
+                        a.library.localeCompare(b.library) || a.title.localeCompare(b.title)
+                    );
+                    status.textContent = additions.length || removals.length
+                        ? `Library updated: ${additions.length} added, ${removals.length} removed. ${plexCatalog.length} total.`
+                        : `${plexCatalog.length} titles are up to date.`;
+                    renderPlexSearchResults();
+                } catch (err) {
+                    status.textContent = `${(plexCatalog || []).length} cached titles available. Update failed: ${err.message}`;
+                } finally {
+                    plexCatalogRefresh = null;
+                }
+            })();
+            return plexCatalogRefresh;
+        }
+
+        function openPlexSearch(ip) {
+            plexSearchDevice = devices.find(device => device.ip === ip) || { ip, name: ip };
+            document.getElementById('plex-play-device').textContent = `Choose media to play on ${plexSearchDevice.name}.`;
+            document.getElementById('plex-search-input').value = '';
+            document.getElementById('plex-play-modal').style.display = 'flex';
+            if (plexCatalog === null) {
+                loadPlexCatalog().then(() => {
+                    if (plexCatalog) refreshPlexCatalog();
+                });
+            } else {
+                renderPlexSearchResults();
+                refreshPlexCatalog();
+            }
+            setTimeout(() => document.getElementById('plex-search-input').focus(), 0);
+        }
+
+        function renderPlexSearchResults() {
+            const results = document.getElementById('plex-search-results');
+            const query = document.getElementById('plex-search-input').value.trim().toLocaleLowerCase();
+            if (!plexCatalog) return;
+            if (!query) {
+                plexSearchResults = [];
+                results.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">Type a movie or show title to search.</div>';
+                return;
+            }
+            plexSearchResults = plexCatalog.filter(item =>
+                (item.search_text || `${item.title} ${item.subtitle}`).toLocaleLowerCase().includes(query)
+            ).slice(0, 60);
+            if (!plexSearchResults.length) {
+                results.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No matching Kid Plex media.</div>';
+                return;
+            }
+            results.innerHTML = plexSearchResults.map((item, index) => `
+                <button class="plex-search-result" onclick="playPlexCatalogItem(${index})">
+                    <img class="plex-search-thumb" src="${item.thumbnail_url}" alt="" loading="lazy">
+                    <span style="min-width: 0;">
+                        <span style="display: block; color: var(--text-main); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.title)}</span>
+                        <span style="display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 0.2rem;">${escapeHtml(item.subtitle)}</span>
+                    </span>
+                </button>
+            `).join('');
+        }
+
+        async function playPlexCatalogItem(index) {
+            const item = plexSearchResults[index];
+            if (!item || !plexSearchDevice) return;
+            const status = document.getElementById('plex-search-status');
+            status.textContent = `Starting “${item.title}” on ${plexSearchDevice.name}…`;
+            document.getElementById('plex-search-input').disabled = true;
+            try {
+                const response = await fetch('api/plex/catalog/play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: plexSearchDevice.ip, video_id: item.video_id })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.detail || 'Plex playback failed');
+                pollForLivePlayback(plexSearchDevice.ip, data.video_id);
+                document.getElementById('plex-play-modal').style.display = 'none';
+                showToast(`Playing “${data.title}” on ${plexSearchDevice.name}.`, 'success');
+            } catch (err) {
+                status.textContent = err.message;
+            } finally {
+                document.getElementById('plex-search-input').disabled = false;
+            }
+        }
+
+        document.getElementById('plex-search-input').addEventListener('input', renderPlexSearchResults);
+        document.getElementById('btn-plex-modal-close').addEventListener('click', () => {
+            document.getElementById('plex-play-modal').style.display = 'none';
+        });
+
+        // Delete Device Handler
+        async function deleteDevice(ip) {
+            if (!confirm("Are you sure you want to stop monitoring this device?")) return;
+            try {
+                await fetch(`api/devices/${ip}`, { method: 'DELETE' });
+                fetchDevices();
+            } catch (err) {
+                console.error("Error deleting device:", err);
+            }
+        }
+
+        // Send Control Command (Play/Pause/Next/Prev)
+        async function sendControl(ip, command) {
+            const actionType = command === 'pause' || command === 'play' ? command : 'media_change';
+            beginPendingDeviceAction(ip, actionType);
+            try {
+                const response = await fetch('api/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip, command })
+                });
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.detail || 'Control command failed');
+                setTimeout(fetchDevices, 200);
+            } catch (err) {
+                delete pendingDeviceActions[ip];
+                await fetchDevices();
+                showToast('Control command failed: ' + err.message, 'error');
+            }
+        }
+
+        async function sendPowerOff(ip) {
+            beginPendingDeviceAction(ip, 'power_off');
+            try {
+                const response = await fetch('api/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip, command: 'power_off' })
+                });
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.detail || 'Power command failed');
+                if (res.playback_stopped) {
+                    showToast('Playback stopped. TV power-off was sent through Roku/CEC.', 'success');
+                } else {
+                    showToast('Power-off sent; waiting for Roku to confirm playback stopped.', 'info');
+                }
+                await fetchDevices();
+            } catch (err) {
+                delete pendingDeviceActions[ip];
+                await fetchDevices();
+                showToast('Could not power off: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteHistoryItem(historyId) {
+            if (!confirm('Delete this item from playback history?')) return;
+            try {
+                const response = await fetch(`api/history/${historyId}`, { method: 'DELETE' });
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.detail || 'Delete failed');
+                await fetchHistory();
+                showToast('History item deleted.', 'success');
+            } catch (err) {
+                showToast('Could not delete history item: ' + err.message, 'error');
+            }
+        }
+
+        function handleResumeClick(btn) {
+            const videoId = btn.getAttribute('data-video-id');
+            const videoTitle = btn.getAttribute('data-video-title');
+            const position = parseFloat(btn.getAttribute('data-position') || '0');
+            const deviceIp = btn.getAttribute('data-device-ip');
+            openResumeModal(videoId, videoTitle, position, deviceIp);
+        }
+
+        // Show a temporary sleek toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div style="font-size: 0.9rem; font-weight: 500; line-height: 1.4;">${message}</div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem; width: auto; font-weight: bold; line-height: 1; transition: color 0.2s;">×</button>
+            `;
+            container.appendChild(toast);
+
+            // Auto remove after 5s
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // Resume Playback Modal handlers
+        function openResumeModal(videoId, videoTitle, position, defaultIp) {
+            selectedHistoryItem = { videoId, videoTitle, position };
+            document.getElementById('modal-video-title').textContent = videoTitle;
+            document.getElementById('modal-video-position').textContent = formatTime(position);
+
+            // Populate select dropdown with currently online/idle/playing Rokus
+            const select = document.getElementById('modal-device-select');
+            select.innerHTML = devices.map(d => {
+                const selected = d.ip === defaultIp ? 'selected' : '';
+                return `<option value="${d.ip}" ${selected}>${escapeHtml(d.name)} (${d.ip})</option>`;
+            }).join('');
+
+            document.getElementById('resume-modal').style.display = 'flex';
+        }
+
+        document.getElementById('btn-modal-cancel').addEventListener('click', () => {
+            document.getElementById('resume-modal').style.display = 'none';
+        });
+
+        document.getElementById('btn-modal-confirm').addEventListener('click', async () => {
+            const ip = document.getElementById('modal-device-select').value;
+            if (!ip) {
+                showToast("Please select a device.", "error");
+                return;
+            }
+
+            document.getElementById('resume-modal').style.display = 'none';
+
+            try {
+                const response = await fetch('api/play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ip: ip,
+                        video_id: selectedHistoryItem.videoId,
+                        position: selectedHistoryItem.position
+                    })
+                });
+                const res = await response.json();
+                if (res.success) {
+                    pollForLivePlayback(ip, selectedHistoryItem.videoId);
+                    if (isPlexId(selectedHistoryItem.videoId)) {
+                        showToast("Plex resumed and the playback position was verified.", "success");
+                    } else {
+                        showToast("Casting resume command sent! YouTube is launching and seeking...", "info");
+                    }
+                } else {
+                    showToast("Error resuming video: " + res.error, "error");
+                }
+            } catch (err) {
+                showToast("Failed to send command to server: " + err, "error");
+            }
+        });
+
+        // Helper to escape HTML tags to prevent XSS
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Live estimated playback timer updater (1s interval)
+        function updatePlaybackProgress() {
+            devices.forEach(d => {
+                if (d.status === 'playing' && d.playing_state && d.playing_state.state === 'Playing') {
+                    const s = d.playing_state;
+                    const elapsed = (new Date() - new Date(s.last_event_time)) / 1000;
+                    const estimatedTime = Math.min(s.duration, s.current_time + elapsed);
+                    const percentage = s.duration > 0 ? (estimatedTime / s.duration) * 100 : 0;
+
+                    const card = document.querySelector(`.playback-card[data-ip="${d.ip}"]`);
+                    if (card) {
+                        const progressBar = card.querySelector('.progress-bar');
+                        const currentTimeLabel = card.querySelector('.current-time-label');
+                        if (progressBar) {
+                            progressBar.style.width = `${percentage}%`;
+                        }
+                        if (currentTimeLabel) {
+                            currentTimeLabel.textContent = formatTime(estimatedTime);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch Plex account status without exposing its token to the browser.
+        async function fetchSettings() {
+            try {
+                const response = await fetch('api/settings');
+                const data = await response.json();
+                const status = document.getElementById('plex-account-status');
+                const connect = document.getElementById('plex-connect-button');
+                const disconnect = document.getElementById('plex-disconnect-button');
+                if (data.plex_connected) {
+                    status.textContent = `Connected as ${data.plex_account_name || 'Plex user'}`;
+                    status.style.color = 'var(--status-online)';
+                    connect.textContent = 'Reconnect Plex Account';
+                    disconnect.style.display = 'block';
+                } else {
+                    status.textContent = 'Not connected. Connect the Plex account that can access the shared server.';
+                    status.style.color = 'var(--text-muted)';
+                    connect.textContent = 'Connect Plex Account';
+                    disconnect.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("Error fetching settings:", err);
+            }
+        }
+
+        // Plex OAuth/PIN flow. Authentication happens on Plex's site; no password
+        // or token is entered into this application.
+        document.getElementById('plex-settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const authWindow = window.open('about:blank', 'plex-auth', 'width=900,height=720');
+            try {
+                const response = await fetch('api/plex/auth/start', { method: 'POST' });
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.detail || 'Could not start Plex authorization');
+                if (authWindow) {
+                    authWindow.location = res.auth_url;
+                } else {
+                    window.open(res.auth_url, '_blank');
+                }
+                showToast('Complete sign-in in the Plex window.', 'info');
+
+                const deadline = Date.now() + 300000;
+                while (Date.now() < deadline) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    const pollResponse = await fetch(`api/plex/auth/status/${encodeURIComponent(res.id)}`);
+                    const poll = await pollResponse.json();
+                    if (!pollResponse.ok) throw new Error(poll.detail || 'Plex authorization failed');
+                    if (poll.connected) {
+                        if (authWindow) authWindow.close();
+                        plexCatalog = null;
+                        await fetchSettings();
+                        fetchDevices();
+                        showToast(`Connected to Plex as ${poll.account_name}.`, 'success');
+                        return;
+                    }
+                }
+                throw new Error('Plex authorization timed out');
+            } catch (err) {
+                if (authWindow) authWindow.close();
+                showToast("Could not connect Plex: " + err.message, "error");
+            }
+        });
+
+        document.getElementById('plex-disconnect-button').addEventListener('click', async () => {
+            await fetch('api/plex/auth', { method: 'DELETE' });
+            plexCatalog = null;
+            fetchSettings();
+            showToast('Plex account disconnected.', 'success');
+        });
+
+        // Periodic update loop (every 3 seconds)
+        setInterval(() => {
+            fetchDevices();
+            fetchHistory();
+        }, 3000);
+
+        // Periodic local estimate (every 1 second)
+        setInterval(updatePlaybackProgress, 1000);
+
+        // Initial Load
+        fetchDevices();
+        fetchHistory();
+        fetchSettings();
+        fetchHistory();
+        fetchSettings();
+    </script>
+</body>
+</html>

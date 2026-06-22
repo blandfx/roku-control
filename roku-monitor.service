@@ -1,0 +1,21 @@
+[Unit]
+Description=Roku Control
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=roku-control
+Group=roku-control
+WorkingDirectory=/opt/roku-control
+ExecStart=/opt/roku-control/.venv/bin/python /opt/roku-control/main.py
+Environment=PYTHONUNBUFFERED=1
+Environment=ROKU_CONTROL_HOST=0.0.0.0
+Environment=ROKU_CONTROL_PORT=8001
+Environment="PLEX_MOVIE_LIBRARY=Kid Movies"
+Environment="PLEX_TV_LIBRARY=Kid TV Shows"
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
