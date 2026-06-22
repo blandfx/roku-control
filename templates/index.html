@@ -94,6 +94,55 @@
             color: var(--text-main);
         }
 
+        .plex-header-status {
+            display: none;
+            align-items: center;
+            gap: 0.45rem;
+            width: auto;
+            padding: 0.4rem 0.65rem;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.08);
+            color: #a7f3d0;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .plex-header-status:hover {
+            background: rgba(16, 185, 129, 0.14);
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+
+        .plex-header-status-dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 50%;
+            background: var(--status-online);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+        }
+
+        .plex-account-modal-content {
+            position: relative;
+            width: min(400px, calc(100vw - 2rem));
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .plex-account-modal-close {
+            position: absolute;
+            z-index: 1;
+            top: 0.65rem;
+            right: 0.7rem;
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
         h1 {
             font-size: 1.8rem;
             font-weight: 700;
@@ -486,6 +535,7 @@
             letter-spacing: 0.05em;
             color: var(--text-muted);
             font-weight: 600;
+            white-space: nowrap;
         }
 
         tr:last-child td {
@@ -515,6 +565,26 @@
         .history-video-title:hover {
             text-decoration: underline;
             color: #818cf8;
+        }
+
+        .history-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .history-service-icon {
+            width: 26px;
+            height: 18px;
+            flex: 0 0 26px;
+            object-fit: contain;
+        }
+
+        .history-service-icon-plex {
+            padding: 2px;
+            border-radius: 3px;
+            background: #1f2937;
         }
 
         .btn-resume {
@@ -787,7 +857,10 @@
     <div class="container">
         <header>
             <h1>Roku Control</h1>
-            <div style="font-size: 0.85rem; color: var(--text-muted);">Local time: <span id="local-time"></span></div>
+            <button type="button" class="plex-header-status" id="plex-header-status" aria-label="Open Plex account settings">
+                <span class="plex-header-status-dot"></span>
+                <span>Plex Connected</span>
+            </button>
         </header>
 
         <aside class="setup-banner" id="setup-banner" aria-labelledby="setup-banner-title">
@@ -818,15 +891,17 @@
                 </div>
 
                 <!-- Plex Account -->
-                <div class="panel">
-                    <div class="panel-title">Plex Account</div>
-                    <form id="plex-settings-form">
-                        <div id="plex-account-status" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
-                            Not connected
-                        </div>
-                        <button type="submit" id="plex-connect-button">Connect Plex Account</button>
-                        <button type="button" id="plex-disconnect-button" style="display: none; margin-top: 0.75rem; background: #5b2730;">Disconnect</button>
-                    </form>
+                <div id="plex-panel-slot">
+                    <div class="panel" id="plex-account-panel">
+                        <div class="panel-title">Plex Account</div>
+                        <form id="plex-settings-form">
+                            <div id="plex-account-status" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                Not connected
+                            </div>
+                            <button type="submit" id="plex-connect-button">Connect Plex Account</button>
+                            <button type="button" id="plex-disconnect-button" style="display: none; margin-top: 0.75rem; background: #5b2730;">Disconnect</button>
+                        </form>
+                    </div>
                 </div>
 
             </div>
@@ -857,9 +932,9 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Video</th>
-                            <th>Roku Device</th>
-                            <th>Last Played Position</th>
+                            <th>Media</th>
+                            <th>Device</th>
+                            <th>Position</th>
                             <th>Timestamp</th>
                             <th>Actions</th>
                         </tr>
@@ -931,6 +1006,14 @@
         </div>
     </div>
 
+    <!-- Connected Plex Account Modal -->
+    <div class="modal" id="plex-account-modal">
+        <div class="modal-content plex-account-modal-content" role="dialog" aria-modal="true" aria-label="Plex account settings">
+            <button type="button" class="plex-account-modal-close" id="plex-account-modal-close" aria-label="Close Plex account settings">×</button>
+            <div id="plex-account-modal-host"></div>
+        </div>
+    </div>
+
     <script>
         let devices = [];
         let history = [];
@@ -939,6 +1022,7 @@
         let plexCatalogRefresh = null;
         let plexSearchResults = [];
         let plexSearchDevice = null;
+        let plexConnected = false;
         const pendingDeviceActions = {};
         const liveStatusPolls = new Set();
 
@@ -1050,12 +1134,6 @@
             if (diffHrs < 24) return `${diffHrs}h ago`;
             return `${diffDays}d ago`;
         }
-
-        // Clock in header
-        setInterval(() => {
-            document.getElementById('local-time').textContent = new Date().toLocaleTimeString();
-        }, 1000);
-        document.getElementById('local-time').textContent = new Date().toLocaleTimeString();
 
         // Load devices and update UI
         async function fetchDevices() {
@@ -1261,6 +1339,13 @@
 
             tbody.innerHTML = history.map(h => {
                 const isPlex = isPlexId(h.video_id);
+                const serviceIcon = isPlex ? `
+                    <svg class="history-service-icon history-service-icon-plex" viewBox="73 8 32 32" aria-label="Plex">
+                        <path d="M83.2283 38.1208H73.2884L82.9363 23.8186L73.2884 9.50464H83.2283L92.8751 23.8186L83.2283 38.1208Z" fill="#EBAF00"></path>
+                        <path d="M95.5265 22.1972L104.15 9.50464H94.1712L90.5361 14.7935L95.5265 22.1972Z" fill="white"></path>
+                        <path d="M90.5361 32.8965C90.5383 32.903 92.2276 35.2527 92.2276 35.2527C93.8587 37.8104 95.951 39.0257 98.4451 39.0354C101.032 38.9891 102.874 36.6964 103.55 35.8927C103.55 35.8916 102.273 34.7679 100.691 32.89C98.5378 30.3324 95.6364 25.6856 95.5265 25.4863L90.5372 32.8976L90.5361 32.8965Z" fill="white"></path>
+                    </svg>` :
+                    `<img class="history-service-icon" src="https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg" alt="YouTube">`;
                 const titleHtml = isPlex ?
                     `<span class="history-video-title">${escapeHtml(h.video_title || 'Plex Media')}</span>` :
                     `<a href="https://youtube.com/watch?v=${h.video_id}" target="_blank" class="history-video-title">
@@ -1269,13 +1354,16 @@
 
                 return `
                     <tr>
-                        <td data-label="Video">
+                        <td data-label="Media">
                             <div class="history-video">
                                 <img src="${h.thumbnail_url}" class="history-thumbnail" alt="Thumbnail">
-                                ${titleHtml}
+                                <div class="history-title-row">
+                                    ${serviceIcon}
+                                    ${titleHtml}
+                                </div>
                             </div>
                         </td>
-                        <td data-label="Roku Device">${escapeHtml(h.device_name)} <div style="font-size:0.75rem; color:var(--text-muted)">${h.device_ip}</div></td>
+                        <td data-label="Device">${escapeHtml(h.device_name)} <div style="font-size:0.75rem; color:var(--text-muted)">${h.device_ip}</div></td>
                         <td data-label="Position">${formatTime(h.position)} / ${formatTime(h.duration)}</td>
                         <td data-label="Played" title="${h.timestamp}">${timeAgo(h.timestamp)}</td>
                         <td data-label="Actions">
@@ -1673,6 +1761,28 @@
         }
 
         // Fetch Plex account status without exposing its token to the browser.
+        const plexAccountPanel = document.getElementById('plex-account-panel');
+        const plexPanelSlot = document.getElementById('plex-panel-slot');
+        const plexAccountModal = document.getElementById('plex-account-modal');
+        const plexAccountModalHost = document.getElementById('plex-account-modal-host');
+        const plexHeaderStatus = document.getElementById('plex-header-status');
+
+        function openPlexAccountModal() {
+            if (!plexConnected) return;
+            plexAccountModalHost.appendChild(plexAccountPanel);
+            plexAccountPanel.style.display = 'block';
+            plexAccountModal.style.display = 'flex';
+        }
+
+        function closePlexAccountModal() {
+            plexPanelSlot.appendChild(plexAccountPanel);
+            plexAccountModal.style.display = 'none';
+            plexAccountPanel.style.display = plexConnected ? 'none' : 'block';
+        }
+
+        plexHeaderStatus.addEventListener('click', openPlexAccountModal);
+        document.getElementById('plex-account-modal-close').addEventListener('click', closePlexAccountModal);
+
         async function fetchSettings() {
             try {
                 const response = await fetch('api/settings');
@@ -1681,15 +1791,24 @@
                 const connect = document.getElementById('plex-connect-button');
                 const disconnect = document.getElementById('plex-disconnect-button');
                 if (data.plex_connected) {
+                    plexConnected = true;
                     status.textContent = `Connected as ${data.plex_account_name || 'Plex user'}`;
                     status.style.color = 'var(--status-online)';
                     connect.textContent = 'Reconnect Plex Account';
                     disconnect.style.display = 'block';
+                    plexHeaderStatus.style.display = 'inline-flex';
+                    if (plexAccountModal.style.display !== 'flex') {
+                        plexPanelSlot.appendChild(plexAccountPanel);
+                        plexAccountPanel.style.display = 'none';
+                    }
                 } else {
+                    plexConnected = false;
                     status.textContent = 'Not connected. Connect the Plex account that can access the shared server.';
                     status.style.color = 'var(--text-muted)';
                     connect.textContent = 'Connect Plex Account';
                     disconnect.style.display = 'none';
+                    plexHeaderStatus.style.display = 'none';
+                    closePlexAccountModal();
                 }
             } catch (err) {
                 console.error("Error fetching settings:", err);
@@ -1737,7 +1856,7 @@
         document.getElementById('plex-disconnect-button').addEventListener('click', async () => {
             await fetch('api/plex/auth', { method: 'DELETE' });
             plexCatalog = null;
-            fetchSettings();
+            await fetchSettings();
             showToast('Plex account disconnected.', 'success');
         });
 
@@ -1752,8 +1871,6 @@
 
         // Initial Load
         fetchDevices();
-        fetchHistory();
-        fetchSettings();
         fetchHistory();
         fetchSettings();
     </script>
