@@ -49,6 +49,51 @@
             padding-bottom: 1rem;
         }
 
+        .setup-banner {
+            display: none;
+            position: relative;
+            margin-bottom: 2rem;
+            padding: 1rem 3.25rem 1rem 1.1rem;
+            border: 1px solid #eab000;
+            border-radius: 10px;
+            background: rgba(234, 176, 0, 0.12);
+            color: var(--text-main);
+        }
+
+        .setup-banner-title {
+            color: #f4c43d;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .setup-banner-directions {
+            display: grid;
+            gap: 0.3rem;
+            color: var(--text-muted);
+            font-size: 0.86rem;
+        }
+
+        .setup-banner-directions strong { color: var(--text-main); }
+        .setup-banner a { color: #f4c43d; }
+
+        .setup-banner-dismiss {
+            position: absolute;
+            top: 0.65rem;
+            right: 0.7rem;
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .setup-banner-dismiss:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+        }
+
         h1 {
             font-size: 1.8rem;
             font-weight: 700;
@@ -745,6 +790,16 @@
             <div style="font-size: 0.85rem; color: var(--text-muted);">Local time: <span id="local-time"></span></div>
         </header>
 
+        <aside class="setup-banner" id="setup-banner" aria-labelledby="setup-banner-title">
+            <button class="setup-banner-dismiss" id="setup-banner-dismiss" type="button" aria-label="Dismiss setup notice">×</button>
+            <div class="setup-banner-title" id="setup-banner-title">Required Roku setup</div>
+            <div class="setup-banner-directions">
+                <div><strong>Roku:</strong> Settings → System → Advanced system settings → Control by mobile apps → <strong>Enabled</strong>.</div>
+                <div><strong>Plex:</strong> Open Plex → User Menu at the top of the sidebar → Settings → Remote Control → <strong>On</strong>.</div>
+                <div><a href="https://support.roku.com/article/install-the-mobile-app" target="_blank" rel="noopener noreferrer">Roku instructions</a> · <a href="https://support.plex.tv/articles/204275243-settings-plex-for-roku/" target="_blank" rel="noopener noreferrer">Plex instructions</a></div>
+            </div>
+        </aside>
+
         <div class="dashboard-grid">
             <!-- Sidebar (Setup) -->
             <div style="display: flex; flex-direction: column; gap: 2rem;">
@@ -886,6 +941,24 @@
         let plexSearchDevice = null;
         const pendingDeviceActions = {};
         const liveStatusPolls = new Set();
+
+        const setupBanner = document.getElementById('setup-banner');
+        const setupBannerStorageKey = 'roku-control-setup-banner-v1';
+        try {
+            if (localStorage.getItem(setupBannerStorageKey) !== 'dismissed') {
+                setupBanner.style.display = 'block';
+            }
+        } catch (err) {
+            setupBanner.style.display = 'block';
+        }
+        document.getElementById('setup-banner-dismiss').addEventListener('click', () => {
+            setupBanner.style.display = 'none';
+            try {
+                localStorage.setItem(setupBannerStorageKey, 'dismissed');
+            } catch (err) {
+                // Dismiss for this page even when storage is unavailable.
+            }
+        });
 
         function isPlexId(videoId) {
             return Boolean(videoId) && (videoId.startsWith('plex:') || videoId.startsWith('plex_'));
